@@ -33,34 +33,37 @@ import (
 
 // GO Concurrency with goroutines
 
-func worker(url string, wg *sync.WaitGroup ){
+func worker(url string, wg *sync.WaitGroup , resultChan chan string) {
 	defer wg.Done() // it will run definitely when the function ends
 
 	time.Sleep(time.Microsecond * 50)
 
 	fmt.Printf("image processed %s\n", url)
 
+	resultChan <- url
 
 }
 
 func main(){
 
 	var wg sync.WaitGroup
+	resultChan:= make(chan string, 5) // buffered channel with capacity 10
 
 	startTime:= time.Now()
 
-	wg.Add(10)
-	go worker("img_1.png", &wg)
-	go worker("img_2.png", &wg)
-	go worker("img_3.png", &wg)
-	go worker("img_4.png", &wg)
-	go worker("img_5.png", &wg)
-	go worker("img_6.png", &wg)
-	go worker("img_7.png", &wg)
-	go worker("img_8.png", &wg)
-	go worker("img_9.png", &wg)
-	go worker("img_10.png", &wg)
+	wg.Add(5)
+	go worker("img_1.png", &wg, resultChan)
+	go worker("img_2.png", &wg, resultChan)
+	go worker("img_3.png", &wg, resultChan)
+	go worker("img_4.png", &wg, resultChan)
+	go worker("img_5.png", &wg, resultChan)
+
 	wg.Wait()
+	close(resultChan) // close the channel after all goroutines are done
+
+	for result:= range resultChan{
+		fmt.Printf("recieved %s \n", result)  // reading from channel
+	}
 
 	fmt.Printf("it took %s ms.\n", time.Since(startTime))
 }
